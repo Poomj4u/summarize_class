@@ -5,6 +5,8 @@ import axios from "axios";
 const UploadAudio = () => {
   const [file, setFile] = useState<File | null>(null);
   const [transcription, setTranscription] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -17,11 +19,12 @@ const UploadAudio = () => {
     try {
       if (!file) return alert("Please select a file first.");
 
+      setLoading(true);
       const formData = new FormData();
       formData.append("audio", file as File);
 
       const response = await axios.post(
-        "http://localhost:8888/transcribe",
+        "http://localhost:3000/transcribe",
         formData,
         {
           headers: {
@@ -30,10 +33,18 @@ const UploadAudio = () => {
         }
       );
 
-      setTranscription(response.data.transcription);
+      setLoading(false);
+      console.log("Response:", response);
+      console.log("Response Data:", response.data);
+      if (response.data.transcript) {
+        setTranscription(response.data.transcript);
+      } else {
+        console.error("Transcription not found in response");
+      }
     } catch (error) {
+      setLoading(false);
+      setError(error.message);
       console.error("Error:", error.message);
-      alert("An error occurred while uploading the file.");
     }
   };
 
@@ -43,12 +54,18 @@ const UploadAudio = () => {
       <form onSubmit={handleSubmit}>
         <input type="file" accept="audio/*" onChange={handleFileChange} />
         {file && <p>Selected file: {file.name}</p>}
-        <button type="submit">Submit</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Processing..." : "Submit"}
+        </button>
       </form>
+      {loading && <p>Loading... Please wait.</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
       {transcription && (
         <div>
           <h3>Transcription:</h3>
-          <pre>{transcription}</pre>
+          <pre style={{ backgroundColor: "#f0f0f0", padding: "10px" }}>
+            {transcription}
+          </pre>
         </div>
       )}
     </div>
