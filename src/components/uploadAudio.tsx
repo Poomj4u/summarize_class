@@ -1,12 +1,12 @@
-// UploadAudio.tsx
+// src/components/UploadAudio.tsx
 import React, { useState } from "react";
 import axios from "axios";
 
-const UploadAudio = () => {
+const UploadAudio: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [transcription, setTranscription] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -20,11 +20,14 @@ const UploadAudio = () => {
       if (!file) return alert("Please select a file first.");
 
       setLoading(true);
+      setError(null);
+      setSuccess(null);
+
       const formData = new FormData();
-      formData.append("audio", file as File);
+      formData.append("audio", file);
 
       const response = await axios.post(
-        "http://localhost:3000/transcribe",
+        "http://37.27.35.61:3000/transcript",
         formData,
         {
           headers: {
@@ -33,18 +36,12 @@ const UploadAudio = () => {
         }
       );
 
-      setLoading(false);
-      console.log("Response:", response);
-      console.log("Response Data:", response.data);
-      if (response.data.transcript) {
-        setTranscription(response.data.transcript);
-      } else {
-        console.error("Transcription not found in response");
-      }
+      setSuccess(response.data.message);
     } catch (error) {
+      setError("Error uploading and transcribing audio");
+      console.error("Error:", error);
+    } finally {
       setLoading(false);
-      setError(error.message);
-      console.error("Error:", error.message);
     }
   };
 
@@ -60,14 +57,7 @@ const UploadAudio = () => {
       </form>
       {loading && <p>Loading... Please wait.</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
-      {transcription && (
-        <div>
-          <h3>Transcription:</h3>
-          <pre style={{ backgroundColor: "#f0f0f0", padding: "10px" }}>
-            {transcription}
-          </pre>
-        </div>
-      )}
+      {success && <p style={{ color: "green" }}>{success}</p>}
     </div>
   );
 };
